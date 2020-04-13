@@ -1,0 +1,10 @@
+name: steintest
+dependencies:
+  - python=3.7
+  - numpy
+  - pandas
+  - pytorch
+  - scikit-learn
+  - matplotlib
+  - pip:
+      - tensorboardX
