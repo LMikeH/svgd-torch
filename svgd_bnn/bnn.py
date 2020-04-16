@@ -11,10 +11,6 @@ import logging
 
 
 class BayesianNeuralNetwork:
-    def __init__(self, **kwargs):
-        self.__dict__.update(**kwargs)
-        logging.info(f'[{self.uid}] BNN instantiated.')
-
     def _unpack_layers(self, weights):
         """ Helper function for forward pass. Code taken from PyTorch.
         This currently only works for feedforward NN
@@ -69,18 +65,14 @@ class BayesianNeuralNetwork:
 
 
 class BNNRegressor(BayesianNeuralNetwork):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        self.Xdim = self.X_train.shape[1]
-        self.Ydim = self.Y_train.shape[1]
-        self.N_train = self.Y_train.shape[0]
-        if hasattr(self, 'Y_test'):
-            self.N_test = self.Y_test.shape[0]
+    def __init__(self):
+        super().__init__()
 
         # Initialize all weights.
-        self.layer_sizes = self.architecture
-        self.layer_shapes = list(zip(self.layer_sizes[:-1], self.layer_sizes[1:]))
+        self.xdim = self.layers[0]
+        self.ydim = self.layers[-1]
+
+        self.layer_shapes = list(zip(self.layers[:-1], self.layers[1:]))
         self.n_weights = sum((m + 1) * n for m, n in self.layer_shapes)
         self.weight_dist = Normal(0, self.sigma_w)
         self.noise_dist = Normal(0, self.sigma_noise)
@@ -93,13 +85,13 @@ class BNNRegressor(BayesianNeuralNetwork):
             target = self.Y_train
             multiplier = 1
         else:
-            batch = self.X_train[batch_indices]
-            target = self.Y_train[batch_indices]
+            batch = self.x_train[batch_indices]
+            target = self.y_train[batch_indices]
             multiplier = (self.N_train / len(batch_indices))
         means = self.forward(X=batch)
         if self.Ydim == 1:
             return multiplier * self.noise_dist.log_prob(means - target).sum()
-        return multiplier * MVN(means, self.sigma_noise * torch.eye(self.Ydim)).log_prob(target).sum()
+        return multiplier * MVN(means, self.sigma_noise * torch.eye(self.ydim)).log_prob(target).sum()
 
 
 
