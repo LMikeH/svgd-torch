@@ -12,8 +12,8 @@ particular application this will be used for initially.
 
 ## Usage
 
-bnn = BNNSVGDRegressor(**config)
-bnn.fit(Xtrain, Ytrain)
+bnn = BNNSVGDRegressor(**config) \
+bnn.fit(Xtrain, Ytrain) \
 y_mean, y_prediction_interval = bnn.predict(Xtest)
 
 Where Xtrain, Ytrain, and Xtest are numpy arrays (or torch tensors). The config file should follow
