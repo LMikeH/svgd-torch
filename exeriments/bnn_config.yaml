@@ -1,9 +1,9 @@
-svgd_bnn_regression_options:
-  sigma_noise: 0.0001
-  sigma_w: 1
-  activation: "rbf"
-  layers: [1, 50, 50, 50, 1]
-  n_particles: 10
-  n_batches: 0
-  svgd_init_lr: .01
-  svgd_epochs: 1000
+
+sigma_noise: 0.0001
+sigma_w: 1
+activation: "rbf"
+layers: [1, 50, 50, 50, 1]
+svgd_n_particles: 10
+n_batches: 0
+svgd_init_lr: .01
+svgd_epochs: 100

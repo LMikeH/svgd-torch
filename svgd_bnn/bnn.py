@@ -11,6 +11,10 @@ import logging
 
 
 class BayesianNeuralNetwork:
+    def __init__(self):
+        logging.basicConfig(level=logging.INFO)
+        self.log = logging.getLogger("BNN Info")
+
     def _unpack_layers(self, weights):
         """ Helper function for forward pass. Code taken from PyTorch.
         This currently only works for feedforward NN
@@ -89,7 +93,7 @@ class BNNRegressor(BayesianNeuralNetwork):
             target = self.y_train[batch_indices]
             multiplier = (self.N_train / len(batch_indices))
         means = self.forward(X=batch)
-        if self.Ydim == 1:
+        if self.ydim == 1:
             return multiplier * self.noise_dist.log_prob(means - target).sum()
         return multiplier * MVN(means, self.sigma_noise * torch.eye(self.ydim)).log_prob(target).sum()
 

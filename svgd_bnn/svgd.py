@@ -17,7 +17,7 @@ class BNNSVGD(BayesianNeuralNetwork):
     def _compute_rbf_h(self):
         pdist = torch.nn.PairwiseDistance(self.n_particles, self.n_particles)
         fkernel = torch.zeros(self.n_particles, self.n_particles)
-        for i in range(self.particles):
+        for i in range(self.n_particles):
             fkernel[i] = pdist(self.particles[i], self.particles)
 
         fkernel = fkernel.triu(diagonal=1).flatten()
@@ -69,7 +69,7 @@ class BNNSVGD(BayesianNeuralNetwork):
 
         n_batches = self.n_batches
         start_time = time.time()
-        self.n_particles = self.svgd_nparticles
+        self.n_particles = self.svgd_n_particles
         self.particles = self.weight_dist.sample(torch.Size([self.n_particles, self.n_weights]))
         optimizer = torch.optim.Adam([self.particles], lr=self.svgd_init_lr)
         for epoch in range(1, self.svgd_epochs + 1):
@@ -82,19 +82,20 @@ class BNNSVGD(BayesianNeuralNetwork):
             self.particles.grad = -update
             optimizer.step()
             if verbose and epoch % 10 == 0:
-                logging.info(f'[{self.uid}] Epoch {epoch} reached.')
+                # logging.info(f'Epoch {epoch} reached.')
+                self.log.info(f'Epoch {epoch} reached.')
         else:
             end_time = time.time()
-            logging.info(f' SVGD ended after {self.svgd_epochs} epochs. Time took: {(end_time - start_time):.0f} seconds.')
+            self.log.info(f' SVGD ended after {self.svgd_epochs} epochs. Time took: {(end_time - start_time):.0f} seconds.')
 
         # Convert to numpy for evaluation and plotting.
         self.save(infer_id)
         self.particles = self.particles.data.numpy()
-        self.all_particles.append((self.particles, self.config["prior_type"]))
+        self.all_particles.append((self.particles, "gaussian"))
 
     def save(self, infer_id):
         """ Save particles into memory. """
-        torch.save(self.particles, f"history/{self.uid}_svgd{infer_id}.pt")
+        torch.save(self.particles, f"history.pt")
 
 
 class BNNSVGDRegressor(BNNSVGD, BNNRegressor):
@@ -117,12 +118,18 @@ class BNNSVGDRegressor(BNNSVGD, BNNRegressor):
         self.standard_std = y.std()
         return (y-self.standard_mean)/self.standard_std
 
-    def detstandardize_data(self, y):
+    def destandardize_data(self, y):
         return y*self.standard_std + self.standard_mean
 
     def normalize_data(self, x):
         self.norm_factors = x.max(axis=0)
         return x/self.norm_factors
+
+    def to_tensor(self, data):
+        return torch.from_numpy(data).float()
+
+    def to_numpy(self, data):
+        return data.detach().numpy()
 
     def fit(self, X, Y):
         self.X_train = self.to_tensor(self.normalize_data(X))
@@ -131,11 +138,12 @@ class BNNSVGDRegressor(BNNSVGD, BNNRegressor):
 
         self.infer()
 
-    def predict(self, domain):
+    def predict(self, X):
         results = []
+        x = X/self.norm_factors
         for particles, pt in self.all_particles:
-            results.append(self.predict_single(particles, domain).squeeze())
-        results = np.array(results).reshape(len(domain), -1)
+            results.append(self.predict_single(particles, x).squeeze())
+        results = np.array(results).reshape(len(x), -1)
         return self.destandardize_data(results.mean(axis=1)), 2 * results.std(axis=1)*self.standard_std
 
     def test_neg_log_likelihood(self):
