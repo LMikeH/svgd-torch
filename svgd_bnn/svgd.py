@@ -87,9 +87,10 @@ class BNNSVGD(BayesianNeuralNetwork):
         else:
             end_time = time.time()
             self.log.info(f' SVGD ended after {self.svgd_epochs} epochs. Time took: {(end_time - start_time):.0f} seconds.')
+            self.log.info(f'SVGD BNN training resulted in a RMSE of {self.train_rmse()}')
 
         # Convert to numpy for evaluation and plotting.
-        self.save(infer_id)
+        # self.save(infer_id)
         self.particles = self.particles.data.numpy()
         self.all_particles.append((self.particles, "gaussian"))
 
@@ -148,21 +149,21 @@ class BNNSVGDRegressor(BNNSVGD, BNNRegressor):
 
     def test_neg_log_likelihood(self):
         """ Compute negative log-likelihood of test set. """
-        results = np.apply_along_axis(lambda w: self.forward(self.x_test, weights=torch.Tensor(w)).numpy(), 1,
+        results = np.apply_along_axis(lambda w: self.forward(self.X_test, weights=torch.Tensor(w)).numpy(), 1,
                                       self.particles)
         means = torch.tensor(np.mean(results, axis=0))
-        return -1 * MVN(means, self.sigma_noise * torch.eye(self.ydim)).log_prob(self.y_test).sum()
+        return -1 * MVN(means, self.sigma_noise * torch.eye(self.ydim)).log_prob(self.Y_test).sum()
 
     def train_rmse(self):
         """ Compute RMSE of train set. """
-        results = np.apply_along_axis(lambda w: self.forward(self.x_train, weights=torch.Tensor(w)).numpy(), 1,
+        results = np.apply_along_axis(lambda w: self.forward(self.X_train, weights=torch.Tensor(w)).numpy(), 1,
                                       self.particles)
         means = torch.tensor(np.mean(results, axis=0))
-        return torch.nn.MSELoss()(means, self.x_train)
+        return torch.nn.MSELoss()(means, self.X_train)
 
     def test_rmse(self):
         """ Compute RMSE of test set. """
         results = np.apply_along_axis(lambda w: self.forward(self.x_test, weights=torch.Tensor(w)).numpy(), 1,
                                       self.particles)
         means = torch.tensor(np.mean(results, axis=0))
-        return torch.nn.MSELoss()(means, self.x_test)
+        return torch.nn.MSELoss()(means, self.X_test)
