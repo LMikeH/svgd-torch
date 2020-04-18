@@ -6,4 +6,4 @@ layers: [1, 50, 50, 50, 1]
 svgd_n_particles: 20
 n_batches: 0
 svgd_init_lr: .01
-svgd_epochs: 1000
+svgd_epochs: 300

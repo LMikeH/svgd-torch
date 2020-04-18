@@ -1,4 +1,4 @@
-# Stein Variational Gradient Descent Bayesian Neural Network
+# Stein Variational Gradient Descent Bayesian Neural Network in Pytorch
 
 This is a refactor of the SVGD BNN regression implementation from dtak/ocbnn-public. 
 The refactor is for the purpose of providing an easy to use extensible Bayesian neural 

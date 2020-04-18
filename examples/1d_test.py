@@ -32,7 +32,7 @@ def data_gen(n):
 
 x, y = data_gen(15)
 
-X = np.linspace(0, 100, 1000)
+X = np.linspace(-20, 120, 1000)
 Y = f(X)
 
 # Train BNN and make prediction with test data
@@ -43,7 +43,8 @@ ypred, ystd = bnn.predict(X)
 plt.plot(x, y, 'o')
 plt.plot(X, Y)
 plt.plot(X, ypred)
+plt.xlim((-20, 120))
 plt.fill_between(X, ypred - ystd, ypred + ystd, alpha=.25)
-
+plt.savefig('../plots/1D_test.png')
 plt.show()
 
