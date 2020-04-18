@@ -12,12 +12,21 @@ import logging
 
 class BayesianNeuralNetwork:
     def __init__(self):
+        """
+        Base class for BNN, can be integrated with different inference methods.
+
+        """
         logging.basicConfig(level=logging.INFO)
         self.log = logging.getLogger("BNN Info")
 
     def _unpack_layers(self, weights):
-        """ Helper function for forward pass. Code taken from PyTorch.
+        """ Helper function for forward pass. Reshapes weights in a flattened array into
+        weight tensors for each layer. Code taken from PyTorch.
         This currently only works for feedforward NN
+
+        Parameters
+        ----------
+        weights: flattened torch tensor
 
         """
         num_weight_samples = weights.shape[0]

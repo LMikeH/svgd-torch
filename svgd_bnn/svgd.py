@@ -65,7 +65,6 @@ class BNNSVGD(BayesianNeuralNetwork):
 
     def infer(self, verbose=True):
         """ Perform SVGD and collects samples. """
-        infer_id = len(self.all_particles) + 1
 
         n_batches = self.n_batches
         start_time = time.time()
@@ -94,7 +93,7 @@ class BNNSVGD(BayesianNeuralNetwork):
         self.particles = self.particles.data.numpy()
         self.all_particles.append((self.particles, "gaussian"))
 
-    def save(self, infer_id):
+    def save(self):
         """ Save particles into memory. """
         torch.save(self.particles, f"history.pt")
 
