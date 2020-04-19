@@ -2,7 +2,7 @@
 
 This is a refactor of the SVGD BNN regression implementation from dtak/ocbnn-public. 
 The refactor is for the purpose of providing an easy to use extensible Bayesian neural 
-network that gives sensible uncertainty estimates. Some improvements from the original
+network. SVGD BNN's provide senseable uncertianty estimates for regression problems. Some improvements from the original
 implementation include helper functions to convert data to torch tensors automatically,
 and data standardization/normalization for seamless integration with data pipelines. 
 
