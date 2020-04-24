@@ -20,9 +20,10 @@ class BayesianNeuralNetwork:
         self.log = logging.getLogger("BNN Info")
 
     def _unpack_layers(self, weights):
-        """ Helper function for forward pass. Reshapes weights in a flattened array into
+        """
+        Helper function for forward pass. Reshapes weights in a flattened array into
         weight tensors for each layer. Code taken from PyTorch.
-        This currently only works for feedforward NN
+        This currently only works for feedforward NN.
 
         Parameters
         ----------
@@ -79,6 +80,10 @@ class BayesianNeuralNetwork:
 
 class BNNRegressor(BayesianNeuralNetwork):
     def __init__(self):
+        """
+        Intermediate class for BNN regression. To be inherited by different inference methods.
+
+        """
         super().__init__()
 
         # Initialize all weights.

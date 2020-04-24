@@ -15,6 +15,12 @@ class BNNSVGD(BayesianNeuralNetwork):
         self.__dict__.update(**kwargs)
 
     def _compute_rbf_h(self):
+        """
+        Calculates appropriate length scale parameter for the RBF kernel used in
+        SVGD
+
+
+        """
         pdist = torch.nn.PairwiseDistance(self.n_particles, self.n_particles)
         fkernel = torch.zeros(self.n_particles, self.n_particles)
         for i in range(self.n_particles):
@@ -64,7 +70,11 @@ class BNNSVGD(BayesianNeuralNetwork):
         return update
 
     def infer(self, verbose=True):
-        """ Perform SVGD and collects samples. """
+        """
+        Perform SVGD and collects samples.
+        Performs full training loop.
+
+        """
 
         n_batches = self.n_batches
         start_time = time.time()
@@ -114,24 +124,81 @@ class BNNSVGDRegressor(BNNSVGD, BNNRegressor):
                                    particles).T
 
     def standardize_data(self, y):
+        """
+        Takes y data and subtracts mean and divides by standard deviation. These values are recorded
+        in order to perform inverse upon prediction.
+
+        Parameters
+        ----------
+        y: numpy array
+
+        Returns
+        -------
+        standardized y
+
+        """
         self.standard_mean = y.mean()
         self.standard_std = y.std()
         return (y-self.standard_mean)/self.standard_std
 
     def destandardize_data(self, y):
+        """
+        multiplies y by standard deviation of y training data and then adds mean of y training data
+
+        Parameters
+        ----------
+        y
+
+        Returns
+        -------
+
+        """
         return y*self.standard_std + self.standard_mean
 
     def normalize_data(self, x):
-        self.norm_factors = x.max(axis=0)
+        """
+        Divide x data by max|x_train|
+
+        Parameters
+        ----------
+        x
+
+        Returns
+        -------
+
+        """
+        self.norm_factors = np.abs(x).max(axis=0)
         return x/self.norm_factors
 
     def to_tensor(self, data):
+        """
+        helper function to convert numpy data to torch Tensor
+
+        Parameters
+        ----------
+        data: numpy array
+
+        Returns
+        -------
+        Tensor
+
+        """
         return torch.from_numpy(data).float()
 
     def to_numpy(self, data):
+        """Converts Tensor back into numpy array"""
         return data.detach().numpy()
 
     def fit(self, X, Y):
+        """
+        Wrapper for self.infer.
+
+        Parameters
+        ----------
+        X: numpy array. X training data
+        Y: numpy array. Y training data
+
+        """
         self.X_train = self.to_tensor(self.normalize_data(X))
         self.Y_train = self.to_tensor(self.standardize_data(Y))
         self.N_train = self.X_train.shape[0]
@@ -139,6 +206,18 @@ class BNNSVGDRegressor(BNNSVGD, BNNRegressor):
         self.infer()
 
     def predict(self, X):
+        """
+        Predict over input data set. Provides mean and prediction interval.
+
+        Parameters
+        ----------
+        X: numpy array
+
+        Returns
+        -------
+        provides mean and prediction interval
+
+        """
         results = []
         x = X/self.norm_factors
         for particles, pt in self.all_particles:
@@ -157,8 +236,11 @@ class BNNSVGDRegressor(BNNSVGD, BNNRegressor):
         """ Compute RMSE of train set. """
         results = np.apply_along_axis(lambda w: self.forward(self.X_train, weights=torch.Tensor(w)).numpy(), 1,
                                       self.particles)
+        # y_hat, _ = self.predict(self.X_train.numpy())
+
         means = torch.tensor(np.mean(results, axis=0))
-        return torch.nn.MSELoss()(means, self.X_train)
+
+        return torch.nn.MSELoss()(means, self.Y_train)
 
     def test_rmse(self):
         """ Compute RMSE of test set. """
