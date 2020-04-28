@@ -1,12 +1,10 @@
-import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
+import numpy as np
 from svgd_bnn.bnn import *
 
 import math
 import time
-import logging
+
 
 
 class BNNSVGD(BayesianNeuralNetwork):

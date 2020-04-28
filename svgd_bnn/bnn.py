@@ -1,11 +1,7 @@
-import numpy as np
-import torch
-import os
 
+import torch
 from torch.autograd import Variable
 from torch.distributions.normal import Normal
-from torch.distributions.uniform import Uniform
-from torch.distributions.dirichlet import Dirichlet
 from torch.distributions.multivariate_normal import MultivariateNormal as MVN
 import logging
 

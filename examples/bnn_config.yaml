@@ -1,4 +1,4 @@
-
+## Using SVGD BNN requires passing these fields as kwargs
 sigma_noise: 0.0001
 sigma_w: 1
 activation: "rbf"
