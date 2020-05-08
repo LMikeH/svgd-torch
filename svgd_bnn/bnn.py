@@ -34,9 +34,9 @@ class BayesianNeuralNetwork:
 
     def _nonlinearity(self, x):
         """ Activation function. """
-        if self.activation == "rbf":
+        if self.options.activation == "rbf":
             return torch.exp(-(x).pow(2))  # gaussian rbf epsilon = 1
-        elif self.activation == 'tanh':
+        elif self.options.activation == 'tanh':
             return torch.tanh(x)
         return x
 
@@ -83,13 +83,13 @@ class BNNRegressor(BayesianNeuralNetwork):
         super().__init__()
 
         # Initialize all weights.
-        self.xdim = self.layers[0]
-        self.ydim = self.layers[-1]
+        self.xdim = self.options.layers[0]
+        self.ydim = self.options.layers[-1]
 
-        self.layer_shapes = list(zip(self.layers[:-1], self.layers[1:]))
+        self.layer_shapes = list(zip(self.options.layers[:-1], self.options.layers[1:]))
         self.n_weights = sum((m + 1) * n for m, n in self.layer_shapes)
-        self.weight_dist = Normal(0, self.sigma_w)
-        self.noise_dist = Normal(0, self.sigma_noise)
+        self.weight_dist = Normal(0, self.options.sigma_w)
+        self.noise_dist = Normal(0, self.options.sigma_noise)
         self.weights = Variable(self.weight_dist.sample(torch.Size([self.n_weights])), requires_grad=True)
 
     def log_likelihood(self, batch_indices=None):
@@ -105,7 +105,7 @@ class BNNRegressor(BayesianNeuralNetwork):
         means = self.forward(X=batch)
         if self.ydim == 1:
             return multiplier * self.noise_dist.log_prob(means - target).sum()
-        return multiplier * MVN(means, self.sigma_noise * torch.eye(self.ydim)).log_prob(target).sum()
+        return multiplier * MVN(means, self.options.sigma_noise * torch.eye(self.ydim)).log_prob(target).sum()
 
 
 

@@ -9,9 +9,6 @@ import time
 
 class BNNSVGD(BayesianNeuralNetwork):
 
-    def __init__(self, **kwargs):
-        self.__dict__.update(**kwargs)
-
     def _compute_rbf_h(self):
         """
         Calculates appropriate length scale parameter for the RBF kernel used in
@@ -19,14 +16,14 @@ class BNNSVGD(BayesianNeuralNetwork):
 
 
         """
-        pdist = torch.nn.PairwiseDistance(self.n_particles, self.n_particles)
-        fkernel = torch.zeros(self.n_particles, self.n_particles)
-        for i in range(self.n_particles):
+        pdist = torch.nn.PairwiseDistance(self.options.n_particles, self.options.n_particles)
+        fkernel = torch.zeros(self.options.n_particles, self.options.n_particles)
+        for i in range(self.options.n_particles):
             fkernel[i] = pdist(self.particles[i], self.particles)
 
         fkernel = fkernel.triu(diagonal=1).flatten()
         med = fkernel[fkernel.nonzero()].median()
-        return (med ** 2) / math.log(self.n_particles)
+        return (med ** 2) / math.log(self.options.n_particles)
 
     def kernel_rbf(self, x1, x2, h):
         """ Compute the RBF kernel: k(x, x') = exp(-1/h * l2-norm(x, x')). """
@@ -37,13 +34,15 @@ class BNNSVGD(BayesianNeuralNetwork):
     def update_phi(self, batch_indices=None):
         """ Computes a single SVGD epoch and updates the particles. """
         h = self._compute_rbf_h()
-        kernel = torch.zeros(self.n_particles, self.n_particles)
+        kernel = torch.zeros(self.options.n_particles, self.options.n_particles)
 
         # Repulsive term
-        gradk_matrix = torch.zeros(self.n_particles, self.n_particles, self.n_weights)
-        for i in range(self.n_particles):
-            grad_each_i = torch.zeros(self.n_particles, self.n_weights)
-            for j in range(self.n_particles):
+        gradk_matrix = torch.zeros(self.options.n_particles,
+                                   self.options.n_particles,
+                                   self.n_weights)
+        for i in range(self.options.n_particles):
+            grad_each_i = torch.zeros(self.options.n_particles, self.n_weights)
+            for j in range(self.options.n_particles):
                 tempw = Variable(self.particles[j], requires_grad=True)
                 tempw.grad = None
                 k = self.kernel_rbf(tempw, self.particles[i], h)
@@ -53,14 +52,14 @@ class BNNSVGD(BayesianNeuralNetwork):
             gradk_matrix[i] = grad_each_i
 
         # Smoothed gradient term
-        logp_matrix = torch.zeros(self.n_particles, self.n_weights)
-        for j in range(self.n_particles):
+        logp_matrix = torch.zeros(self.options.n_particles, self.n_weights)
+        for j in range(self.options.n_particles):
             self.weights = Variable(self.particles[j], requires_grad=True)
             self.weights.grad = None
             self.log_posterior(batch_indices).backward()
             logp_matrix[j] = self.weights.grad
-        update = logp_matrix.unsqueeze(dim=0).repeat(self.n_particles, 1, 1)
-        for i in range(self.n_particles):
+        update = logp_matrix.unsqueeze(dim=0).repeat(self.options.n_particles, 1, 1)
+        for i in range(self.options.n_particles):
             update[i] *= kernel[:, i].unsqueeze(dim=1)
 
         update += gradk_matrix
@@ -74,12 +73,12 @@ class BNNSVGD(BayesianNeuralNetwork):
 
         """
 
-        n_batches = self.n_batches
+        n_batches = self.options.n_batches
         start_time = time.time()
-        self.n_particles = self.svgd_n_particles
-        self.particles = self.weight_dist.sample(torch.Size([self.n_particles, self.n_weights]))
-        optimizer = torch.optim.Adam([self.particles], lr=self.svgd_init_lr)
-        for epoch in range(1, self.svgd_epochs + 1):
+        self.particles = self.weight_dist.sample(torch.Size([self.options.n_particles,
+                                                             self.n_weights]))
+        optimizer = torch.optim.Adam([self.particles], lr=self.options.init_lr)
+        for epoch in range(1, self.options.epochs + 1):
             optimizer.zero_grad()
             if n_batches:
                 batch_indices = torch.arange(epoch % n_batches, self.N_train, n_batches)
@@ -93,7 +92,7 @@ class BNNSVGD(BayesianNeuralNetwork):
                 self.log.info(f'Epoch {epoch} reached.')
         else:
             end_time = time.time()
-            self.log.info(f' SVGD ended after {self.svgd_epochs} epochs. Time took: {(end_time - start_time):.0f} seconds.')
+            self.log.info(f' SVGD ended after {self.options.epochs} epochs. Time took: {(end_time - start_time):.0f} seconds.')
             self.log.info(f'SVGD BNN training resulted in a RMSE of {self.train_rmse()}')
 
         # Convert to numpy for evaluation and plotting.
@@ -108,9 +107,9 @@ class BNNSVGD(BayesianNeuralNetwork):
 
 class BNNSVGDRegressor(BNNSVGD, BNNRegressor):
     """ BNN inference using SVGD for regression. """
-    def __init__(self, **kwargs):
+    def __init__(self, options):
         """ Instantiates the MLP. """
-        self.__dict__.update(**kwargs)
+        self.options = options
         BNNRegressor.__init__(self)
         self.all_particles = []
 
@@ -228,7 +227,7 @@ class BNNSVGDRegressor(BNNSVGD, BNNRegressor):
         results = np.apply_along_axis(lambda w: self.forward(self.X_test, weights=torch.Tensor(w)).numpy(), 1,
                                       self.particles)
         means = torch.tensor(np.mean(results, axis=0))
-        return -1 * MVN(means, self.sigma_noise * torch.eye(self.ydim)).log_prob(self.Y_test).sum()
+        return -1 * MVN(means, self.options.sigma_noise * torch.eye(self.ydim)).log_prob(self.Y_test).sum()
 
     def train_rmse(self):
         """ Compute RMSE of train set. """

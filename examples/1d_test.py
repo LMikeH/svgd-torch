@@ -2,6 +2,7 @@ from svgd_bnn.svgd import BNNSVGDRegressor
 import numpy as np
 import matplotlib.pyplot as plt
 import yaml
+from examples.options_example import BNNOptions
 
 
 # Load config
@@ -9,8 +10,11 @@ file = open("bnn_config.yaml", 'r')
 config = yaml.safe_load(file)
 file.close()
 
+# Load options
+options = BNNOptions(**config)
+
 # Instantiate BNN
-bnn = BNNSVGDRegressor(**config)
+bnn = BNNSVGDRegressor(options)
 
 
 noise = .000001
