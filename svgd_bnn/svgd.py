@@ -72,13 +72,16 @@ class BNNSVGD(BayesianNeuralNetwork):
         Performs full training loop.
 
         """
-
+        self.all_particles = []
         n_batches = self.options.n_batches
         start_time = time.time()
         self.particles = self.weight_dist.sample(torch.Size([self.options.n_particles,
                                                              self.n_weights]))
         optimizer = torch.optim.Adam([self.particles], lr=self.options.init_lr)
-        for epoch in range(1, self.options.epochs + 1):
+        epoch = 0
+        converged = False
+        while epoch < self.options.max_epochs and converged is False:
+        # for epoch in range(1, self.options.epochs + 1):
             optimizer.zero_grad()
             if n_batches:
                 batch_indices = torch.arange(epoch % n_batches, self.N_train, n_batches)
@@ -87,12 +90,17 @@ class BNNSVGD(BayesianNeuralNetwork):
                 update = self.update_phi()
             self.particles.grad = -update
             optimizer.step()
-            if verbose and epoch % 10 == 0:
-                # logging.info(f'Epoch {epoch} reached.')
-                self.log.info(f'Epoch {epoch} reached.')
+
+            if epoch % 10 == 0:
+                rmse = self.train_rmse()
+                if rmse < self.options.convergence_criteria:
+                    converged = True
+
+                self.log.info(f'Epoch {epoch} reached with rsme of {rmse}.')
+            epoch += 1
         else:
             end_time = time.time()
-            self.log.info(f' SVGD ended after {self.options.epochs} epochs. Time took: {(end_time - start_time):.0f} seconds.')
+            self.log.info(f' SVGD ended after {epoch} epochs. Time took: {(end_time - start_time):.0f} seconds.')
             self.log.info(f'SVGD BNN training resulted in a RMSE of {self.train_rmse()}')
 
         # Convert to numpy for evaluation and plotting.

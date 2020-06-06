@@ -6,5 +6,3 @@ dependencies:
   - pytorch
   - scikit-learn
   - matplotlib
-  - pip:
-      - tensorboardX
